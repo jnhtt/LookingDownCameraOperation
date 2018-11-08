@@ -8,9 +8,8 @@ public class LookingDownCameraOperation : BaseInputOperation
 
     public LookingDownCameraOperation()
     {
-        var cameraForward = CameraManager.Instance.Camera.transform.forward;
-        interactPlane = new Plane(-cameraForward, 0f);
-        cameraMovablePlane = new Plane(cameraForward, 0f);
+        interactPlane = new Plane(Vector3.up, 0f);
+        cameraMovablePlane = new Plane(Vector3.down, 0f);
     }
 
     public override void OnPointerDown(InputData inputData)
@@ -35,7 +34,7 @@ public class LookingDownCameraOperation : BaseInputOperation
         base.OnBeginDrag(inputData);
         cameraMovablePlane.distance = CameraManager.Instance.Camera.transform.position.y;
         Vector3 camPos = Vector3.zero;
-        if (TryGetCameraPosition(inputData.screenPosition, out camPos)) {
+        if (TryGetCameraPositionOnCameraMovablePlane(inputData.screenPosition, out camPos)) {
             inputData.previousCameraPosition = camPos;
         }
     }
@@ -48,14 +47,14 @@ public class LookingDownCameraOperation : BaseInputOperation
 
         base.OnDrag(inputData);
         Vector3 camPos = Vector3.zero;
-        if (TryGetCameraPosition(inputData.screenPosition, out camPos)) {
+        if (TryGetCameraPositionOnCameraMovablePlane(inputData.screenPosition, out camPos)) {
             Vector3 diff = camPos - inputData.previousCameraPosition;
             Vector3 pos = CameraManager.Instance.Camera.transform.position - diff;
             CameraManager.Instance.ReservePosition(pos);
         }
     }
 
-    private bool TryGetCameraPosition(Vector3 screenPos, out Vector3 camPos)
+    private bool TryGetCameraPositionOnCameraMovablePlane(Vector3 screenPos, out Vector3 camPos)
     {
         camPos = Vector3.zero;
         var ray = CameraManager.Instance.Camera.ScreenPointToRay(screenPos);
@@ -64,7 +63,6 @@ public class LookingDownCameraOperation : BaseInputOperation
         if (interactPlane.Raycast(ray, out enter)) {
             Vector3 pos = ray.origin + enter * ray.direction;
             var invRay = new Ray(pos, -camTrans.forward);
-            // 画角による距離の差を考慮.
             if (cameraMovablePlane.Raycast(invRay, out enter)) {
                 camPos = invRay.origin + enter * invRay.direction;
                 return true;
